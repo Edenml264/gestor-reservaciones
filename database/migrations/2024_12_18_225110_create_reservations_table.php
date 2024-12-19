@@ -14,12 +14,29 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained()->onDelete('cascade');
+            $table->foreignId('vehicle_id')->constrained()->onDelete('cascade');
             $table->string('client_name');
             $table->string('client_email');
             $table->string('client_phone');
-            $table->dateTime('reservation_date');
-            $table->text('special_requests')->nullable();
-            $table->enum('status', ['pending', 'confirmed', 'cancelled'])->default('pending');
+            $table->string('hotel')->nullable();
+            $table->string('destination')->nullable();
+            $table->enum('service_type', ['one-way', 'round-trip']);
+            $table->date('arrival_date')->nullable();
+            $table->time('arrival_time')->nullable();
+            $table->string('arrival_airline')->nullable();
+            $table->string('arrival_flight')->nullable();
+            $table->date('departure_date')->nullable();
+            $table->time('departure_time')->nullable();
+            $table->string('departure_airline')->nullable();
+            $table->string('departure_flight')->nullable();
+            $table->date('pickup_date');
+            $table->time('pickup_time');
+            $table->integer('number_passengers');
+            $table->decimal('price_normal', 10, 2);
+            $table->decimal('price_paypal', 10, 2);
+            $table->text('comments')->nullable();
+            $table->string('reservation_number')->unique();
+            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
             $table->timestamps();
         });
     }

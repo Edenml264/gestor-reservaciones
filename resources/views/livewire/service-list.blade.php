@@ -4,9 +4,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @foreach($services as $service)
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                @if($service->image_url)
-                    <img src="{{ $service->image_url }}" alt="{{ $service->name }}" class="w-full h-48 object-cover">
-                @endif
+                <img src="{{ $service->image_url ?? asset('images/default-service.jpg') }}" 
+                     alt="{{ $service->name }}" 
+                     class="w-full h-48 object-cover">
                 <div class="p-6">
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ $service->name }}</h3>
                     <p class="text-gray-600 mb-4">{{ $service->description }}</p>
