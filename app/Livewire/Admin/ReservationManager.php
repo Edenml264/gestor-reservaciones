@@ -15,15 +15,12 @@ class ReservationManager extends Component
     public $search = '';
     public $status = '';
     public $dateRange = '';
-    public $dateFilter = 'arrival'; // arrival, departure, pickup
+    public $dateFilter = 'pickup'; // pickup, arrival, departure
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
     
-    // Modales
+    // Reservación seleccionada
     public $selectedReservation = null;
-    public $showDeleteModal = false;
-    public $showEditModal = false;
-    public $showDetailsModal = false;
 
     // Filtros por fecha
     public $startDate = '';
@@ -33,7 +30,7 @@ class ReservationManager extends Component
         'search' => ['except' => ''],
         'status' => ['except' => ''],
         'dateRange' => ['except' => ''],
-        'dateFilter' => ['except' => 'arrival'],
+        'dateFilter' => ['except' => 'pickup'],
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
@@ -63,124 +60,87 @@ class ReservationManager extends Component
         }
     }
 
-    public function updatedDateRange($value)
+    public function showDetails($id)
     {
-        if ($value) {
-            [$this->startDate, $this->endDate] = explode(' to ', $value);
-        } else {
-            $this->startDate = '';
-            $this->endDate = '';
-        }
-        $this->resetPage();
+        $this->selectedReservation = Reservation::with('vehicle')->find($id);
+        $this->dispatch('open-details-modal');
     }
 
-    public function confirmDelete($reservationId)
+    public function edit($id)
     {
-        $this->selectedReservation = Reservation::find($reservationId);
-        $this->showDeleteModal = true;
+        $this->selectedReservation = Reservation::find($id);
+        $this->dispatch('open-edit-modal');
+    }
+
+    public function confirmDelete($id)
+    {
+        $this->selectedReservation = Reservation::find($id);
+        $this->dispatch('open-delete-modal');
     }
 
     public function deleteReservation()
     {
         if ($this->selectedReservation) {
             $this->selectedReservation->delete();
-            $this->showDeleteModal = false;
             $this->selectedReservation = null;
-            $this->dispatch('notify', [
-                'type' => 'success',
-                'message' => 'Reservación eliminada exitosamente.'
-            ]);
+            $this->dispatch('close-delete-modal');
+            session()->flash('message', 'Reservación eliminada correctamente.');
         }
-    }
-
-    public function editReservation($reservationId)
-    {
-        $this->selectedReservation = Reservation::find($reservationId);
-        $this->showEditModal = true;
-    }
-
-    public function showDetails($reservationId)
-    {
-        $this->selectedReservation = Reservation::with(['vehicle'])->find($reservationId);
-        $this->showDetailsModal = true;
     }
 
     public function getReservationsProperty()
     {
         return Reservation::query()
             ->when($this->search, function ($query) {
-                $query->where(function ($query) {
-                    $query->where('client_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('client_email', 'like', '%' . $this->search . '%')
-                        ->orWhere('client_phone', 'like', '%' . $this->search . '%')
-                        ->orWhere('hotel', 'like', '%' . $this->search . '%')
-                        ->orWhere('destination', 'like', '%' . $this->search . '%');
+                $query->where(function ($q) {
+                    $q->where('client_name', 'like', '%' . $this->search . '%')
+                      ->orWhere('client_email', 'like', '%' . $this->search . '%')
+                      ->orWhere('client_phone', 'like', '%' . $this->search . '%')
+                      ->orWhere('reservation_number', 'like', '%' . $this->search . '%');
                 });
             })
             ->when($this->status, function ($query) {
                 $query->where('status', $this->status);
             })
             ->when($this->dateRange, function ($query) {
+                [$start, $end] = explode(' to ', $this->dateRange);
                 $query->whereBetween($this->dateFilter . '_date', [
-                    $this->startDate,
-                    $this->endDate
+                    Carbon::parse($start)->startOfDay(),
+                    Carbon::parse($end)->endOfDay(),
                 ]);
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
     }
 
-    public function exportToExcel()
+    public function getTotalReservationsProperty()
     {
-        return response()->streamDownload(function () {
-            $reservations = $this->reservationsProperty;
-            $headers = [
-                'ID',
-                'Cliente',
-                'Email',
-                'Teléfono',
-                'Hotel',
-                'Destino',
-                'Fecha de Llegada',
-                'Hora de Llegada',
-                'Fecha de Salida',
-                'Hora de Salida',
-                'Estado',
-                'Creado',
-            ];
+        return Reservation::count();
+    }
 
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
+    public function getPendingReservationsProperty()
+    {
+        return Reservation::where('status', 'pending')->count();
+    }
 
-            foreach ($reservations as $reservation) {
-                fputcsv($handle, [
-                    $reservation->id,
-                    $reservation->client_name,
-                    $reservation->client_email,
-                    $reservation->client_phone,
-                    $reservation->hotel,
-                    $reservation->destination,
-                    $reservation->arrival_date,
-                    $reservation->arrival_time,
-                    $reservation->departure_date,
-                    $reservation->departure_time,
-                    $reservation->status,
-                    $reservation->created_at->format('Y-m-d H:i'),
-                ]);
-            }
+    public function getConfirmedReservationsProperty()
+    {
+        return Reservation::where('status', 'confirmed')->count();
+    }
 
-            fclose($handle);
-        }, 'reservaciones.csv');
+    public function getCompletedReservationsProperty()
+    {
+        return Reservation::where('status', 'completed')->count();
     }
 
     public function render()
     {
         return view('livewire.admin.reservation-manager', [
             'reservations' => $this->reservations,
-            'totalReservations' => Reservation::count(),
-            'pendingReservations' => Reservation::where('status', 'pending')->count(),
-            'confirmedReservations' => Reservation::where('status', 'confirmed')->count(),
-            'completedReservations' => Reservation::where('status', 'completed')->count(),
+            'totalReservations' => $this->totalReservations,
+            'pendingReservations' => $this->pendingReservations,
+            'confirmedReservations' => $this->confirmedReservations,
+            'completedReservations' => $this->completedReservations,
         ]);
     }
 }

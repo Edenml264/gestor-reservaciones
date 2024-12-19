@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Service;
+use App\Models\Vehicle;
+use Illuminate\Support\Str;
 
 class ReservationForm extends Component
 {
@@ -11,8 +13,12 @@ class ReservationForm extends Component
     public $client_name = '';
     public $client_email = '';
     public $client_phone = '';
-    public $reservation_date = '';
-    public $special_requests = '';
+    public $vehicle_id = '';
+    public $service_type = 'one-way';
+    public $pickup_date = '';
+    public $pickup_time = '';
+    public $number_passengers = 1;
+    public $comments = '';
 
     public function mount(Service $service)
     {
@@ -25,30 +31,45 @@ class ReservationForm extends Component
             'client_name' => 'required|min:3',
             'client_email' => 'required|email',
             'client_phone' => 'required',
-            'reservation_date' => 'required|date|after:today',
-            'special_requests' => 'nullable|string'
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'service_type' => 'required|in:one-way,round-trip',
+            'pickup_date' => 'required|date|after:today',
+            'pickup_time' => 'required',
+            'number_passengers' => 'required|integer|min:1',
+            'comments' => 'nullable|string'
         ];
     }
 
     public function saveReservation()
     {
-        $this->validate();
-
+        $validatedData = $this->validate();
+        
         $reservation = $this->service->reservations()->create([
             'client_name' => $this->client_name,
             'client_email' => $this->client_email,
             'client_phone' => $this->client_phone,
-            'reservation_date' => $this->reservation_date,
-            'special_requests' => $this->special_requests,
+            'vehicle_id' => $this->vehicle_id,
+            'service_type' => $this->service_type,
+            'pickup_date' => $this->pickup_date,
+            'pickup_time' => $this->pickup_time,
+            'number_passengers' => $this->number_passengers,
+            'comments' => $this->comments,
+            'reservation_number' => 'BTL-' . Str::random(6),
+            'price_normal' => $this->service->price,
+            'price_paypal' => $this->service->price * 1.05, // 5% adicional para PayPal
+            'status' => 'pending'
         ]);
 
-        $this->reset(['client_name', 'client_email', 'client_phone', 'reservation_date', 'special_requests']);
+        $this->reset(['client_name', 'client_email', 'client_phone', 'vehicle_id', 
+                     'service_type', 'pickup_date', 'pickup_time', 'number_passengers', 'comments']);
 
         session()->flash('message', '¡Reservación creada exitosamente!');
     }
 
     public function render()
     {
-        return view('livewire.reservation-form');
+        return view('livewire.reservation-form', [
+            'vehicles' => Vehicle::where('active', true)->get()
+        ]);
     }
 }

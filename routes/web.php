@@ -3,6 +3,9 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ServiceController;
+use App\Livewire\Admin\ReservationManager;
+use App\Livewire\Admin\ServiceManager;
+use App\Livewire\Admin\VehicleManager;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,6 +32,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
     Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])->name('reservations.show');
     Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy'])->name('reservations.destroy');
+
+    // Rutas de administración
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/reservations', ReservationManager::class)->name('reservations');
+        Route::get('/services', ServiceManager::class)->name('services');
+        Route::get('/vehicles', VehicleManager::class)->name('vehicles');
+    });
 });
 
 require __DIR__.'/auth.php';

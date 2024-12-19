@@ -15,6 +15,15 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.reservations')" :active="request()->routeIs('admin.reservations')">
+                        {{ __('Reservaciones') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.services')" :active="request()->routeIs('admin.services')">
+                        {{ __('Servicios') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.vehicles')" :active="request()->routeIs('admin.vehicles')">
+                        {{ __('Vehículos') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -69,6 +78,15 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.reservations')" :active="request()->routeIs('admin.reservations')">
+                {{ __('Reservaciones') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.services')" :active="request()->routeIs('admin.services')">
+                {{ __('Servicios') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.vehicles')" :active="request()->routeIs('admin.vehicles')">
+                {{ __('Vehículos') }}
             </x-responsive-nav-link>
         </div>
 
